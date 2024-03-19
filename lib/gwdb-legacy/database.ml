@@ -759,7 +759,6 @@ let make_record_access cf cf_acc shift array_pos (plenr, patches) (_, pending)
       load_array = (fun () -> ignore @@ array ());
       get = gen_get false;
       get_nopending = gen_get true;
-      set = (fun i v -> (array ()).(i) <- v);
       len = max len !plenr;
       output_array =
         (fun oc ->
@@ -1278,7 +1277,6 @@ let record_access_of tab =
     Dbdisk.load_array = (fun () -> ());
     get = (fun i -> tab.(i));
     get_nopending = (fun i -> tab.(i));
-    set = (fun i v -> tab.(i) <- v);
     output_array = (fun oc -> Dutil.output_value_no_sharing oc (tab : _ array));
     len = Array.length tab;
     clear_array = (fun () -> ());

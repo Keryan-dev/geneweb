@@ -870,23 +870,6 @@ let rec eval_expr ((conf, eval_var, eval_apply) as ceva) = function
   | Aint (_, s) -> VVstring s
   | e -> raise_with_loc (loc_of_expr e) (Failure (not_impl "eval_expr" e))
 
-let print_error ((fname, bp, ep) as pos) exc =
-  incr GWPARAM.nb_errors;
-  if !GWPARAM.nb_errors <= 10 then (
-    if fname = "" then Printf.eprintf "*** <W> template file"
-    else Printf.eprintf "File %s" fname;
-    let line = if fname = "" then None else Templ_parser.line_of_loc pos in
-    Printf.eprintf ", ";
-    (match line with
-    | Some (lin, col1, col2) ->
-        Printf.eprintf "line %d, characters %d-%d:\n" lin col1 col2
-    | None -> Printf.eprintf "characters %d-%d:\n" bp ep);
-    (match exc with
-    | Failure s -> Printf.eprintf "Failed - %s" s
-    | _ -> Printf.eprintf "%s" (Printexc.to_string exc));
-    Printf.eprintf "\n\n";
-    flush stderr)
-
 let eval_bool_expr conf (eval_var, eval_apply) e =
   try
     match eval_expr (conf, eval_var, eval_apply) e with
@@ -894,7 +877,7 @@ let eval_bool_expr conf (eval_var, eval_apply) e =
     | VVstring _ | VVother _ ->
         raise_with_loc (loc_of_expr e) (Failure "bool value expected")
   with Exc_located (loc, exc) ->
-    print_error loc exc;
+    Templ_parser.print_error loc exc;
     false
 
 let eval_string_expr conf (eval_var, eval_apply) e =
@@ -904,7 +887,7 @@ let eval_string_expr conf (eval_var, eval_apply) e =
     | VVbool _ | VVother _ ->
         raise_with_loc (loc_of_expr e) (Failure "string value expected")
   with Exc_located (loc, exc) ->
-    print_error loc exc;
+    Templ_parser.print_error loc exc;
     ""
 
 let print_body_prop conf =

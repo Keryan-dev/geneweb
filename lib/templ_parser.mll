@@ -78,9 +78,28 @@ let pos lex = !current_file, Lexing.lexeme_start lex, Lexing.lexeme_end lex
 
 exception Templ_parser_exc of string * int * int
 
+let print_error ((fname, bp, ep) as pos) exc =
+  incr GWPARAM.nb_errors;
+  if !GWPARAM.nb_errors <= 10 then (
+    if fname = "" then Printf.eprintf "*** <W> template file"
+    else Printf.eprintf "File %s" fname;
+    let line = if fname = "" then None else line_of_loc pos in
+    Printf.eprintf ", ";
+    (match line with
+    | Some (lin, col1, col2) ->
+        Printf.eprintf "line %d, characters %d-%d:\n" lin col1 col2
+    | None -> Printf.eprintf "characters %d-%d:\n" bp ep);
+    (match exc with
+    | Failure s -> Printf.eprintf "Failed - %s" s
+    | _ -> Printf.eprintf "%s" (Printexc.to_string exc));
+    Printf.eprintf "\n\n";
+    flush stderr)
+
 let fail lex ?(pos = pos lex) () =
   let (file, bp, ep) = pos in
-  raise (Templ_parser_exc (file, bp, ep))
+  let exn = Templ_parser_exc (file, bp, ep) in
+  print_error pos exn;
+  raise exn
 
 let dump_ast ?(truncate=max_int) ?(depth=max_int) a = dump_ast truncate depth a
 

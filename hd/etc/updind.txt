@@ -47,6 +47,11 @@
   <h3 class="card-header pt-2 pb-1 text-center" id="xx">[*yy]1</h3>
 %end;
 
+%define;prev_value(val)
+  %let;v;%if;("val"="")[*n (number)]0%else;val%end;%in;
+  title="[*previous]: %v"
+%end;
+
 %define;date(xlab,xvar,xdt,xcond)
   %let;day_input;pattern="(?:0?[1-9]|1[0-9]|2[0-9]|3[0-1])" size="2" maxlength="2" xcond%in;
   %let;month_input;pattern="(?:0?[1-9]|1[0-2]|VD|BR|FM|NI|PL|VT|GE|FL|PR|ME|TH|FT|JC|vd|br|fm|ni|pl|vt|ge|fl|pr|me|th|ft|jc)" size="1" maxlength="2" xcond%in;
@@ -55,7 +60,12 @@
     <div class="col-sm-1 col-md-2 col-form-label">
       xlab
     </div>
-    <div class="col col-sm-auto form-inline">
+      %let;pdate;%if;([!dates order]0 = "ddmmyy" or [!dates order]0 = "ddmmyyyy" or [!dates order]0 = "dmyyyy")%xdt.day;/%xdt.month;/%xdt.year;
+                 %elseif;([!dates order]0 = "mmddyyyy")%xdt.month;/%xdt.day;/%xdt.year;
+                 %else;%xdt.year;/%xdt.month;/%xdt.day;
+                 %end;
+      %in;
+      <div class="col col-sm-auto form-inline" %apply;prev_value(pdate)>
       %if;([!dates order]0 = "ddmmyy" or [!dates order]0 = "ddmmyyyy" or [!dates order]0 = "dmyyyy")
         <label>
           <input type="text" class="form-control" name="xvar_dd" value="%xdt.day;" %day_input;>
@@ -105,7 +115,17 @@
     </div>
     <div class="col-10 col-lg ml-auto form-inline">
       <label for="xvar_prec" class="sr-only col-form-label">[precision]0</label>
-      <select class="form-control pl-lg-1 pr-lg-0 px-xl-2" name="xvar_prec" id="xvar_prec" xcond>
+      %let;pprec;%if;(xdt.prec = "sure")[exact]0
+                 %elseif;(xdt.prec = "about")[about (date)]0
+                 %elseif;(xdt.prec = "maybe")[possibly (date)]0
+                 %elseif;(xdt.prec = "before")[before (date)]0
+                 %elseif;(xdt.prec = "after")[after (date)]0
+                 %elseif;(xdt.prec = "oryear")...[or]...
+                 %elseif;(xdt.prec = "yearint")...[between (date)]...
+                 %else;""
+                 %end;
+      %in;
+      <select class="form-control pl-lg-1 pr-lg-0 px-xl-2" name="xvar_prec" id="xvar_prec" xcond %apply;prev_value(pprec)>
         %(<option value="-"%if;(xdt.prec = "") selected%end;>&nbsp;</option>%)
         <option value="sure"%if;(xdt.prec = "sure") selected%end;>[exact]0</option>
         <option value="about"%if;(xdt.prec = "about") selected%end;>[about (date)]0</option>
@@ -116,8 +136,15 @@
         <option value="yearint"%if;(xdt.prec = "yearint") selected%end;>…[between (date)]…</option>
       </select>
       <label for="xvar_cal" class="sr-only col-form-label">[calendar/calendars]0</label>
+      %let;pcal;%if;(xdt.calendar = "gregorian")[*gregorian/julian/french/hebrew]0
+                 %elseif;(xdt.calendar = "julian")[*gregorian/julian/french/hebrew]1
+                 %elseif;(xdt.calendar = "french")[*gregorian/julian/french/hebrew]2
+                 %elseif;(xdt.calendar = "hebrew")[*gregorian/julian/french/hebrew]3
+                 %else;""
+                 %end;
+      %in;
       <select class="form-control pl-lg-1 pr-lg-0 px-xl-2 ml-sm-1 ml-md-3" name="xvar_cal" id="xvar_cal" onchange="changeCalendar('xvar_mm_sel','xvar_mm','%xdt.month;',this),%nn;
-                                        changeCalendar('xvar_ormonth_sel','xvar_ormonth','%xdt.ormonth;',this)" xcond>
+                                        changeCalendar('xvar_ormonth_sel','xvar_ormonth','%xdt.ormonth;',this)" xcond %apply;prev_value(pcal)>
         <option value=""%if;(xdt.calendar = "") selected%end;>-</option>
         <option value="G"%if;(xdt.calendar = "gregorian") selected%end;>[*gregorian/julian/french/hebrew]0</option>
         <option value="J"%if;(xdt.calendar = "julian") selected%end;>[*gregorian/julian/french/hebrew]1</option>
@@ -128,7 +155,12 @@
   </div>
   <div class="row justify-content-sm-end justify-content-md-start">
     <div class="col-sm-1 col-md-2"></div>
-    <div class="col col-sm-auto form-inline">
+    %let;pordate;%if;([!dates order]0 = "ddmmyy" or [!dates order]0 = "ddmmyyyy" or [!dates order]0 = "dmyyyy")%xdt.orday;/%xdt.ormonth;/%xdt.oryear;
+                 %elseif;([!dates order]0 = "mmddyyyy")%xdt.ormonth;/%xdt.orday;/%xdt.oryear;
+                 %else;%xdt.oryear;/%xdt.ormonth;/%xdt.orday;
+                 %end;
+    %in;
+    <div class="col col-sm-auto form-inline" %apply;prev_value(pordate)>
       %if;([!dates order]0 = "ddmmyy" or [!dates order]0 = "ddmmyyyy" or [!dates order]0 = "dmyyyy")
         <label>
           <input type="text" class="form-control" name="xvar_orday" value="%xdt.orday;" %day_input;>
@@ -178,62 +210,9 @@
     </div>
     <div class="col-10 col-lg">
       <label for="xvar_text" class="col-form-label sr-only"></label>
-      <input type="text" class="form-control" name="xvar_text" maxlength="100" value="%xdt.text;" id="xvar_text" placeholder="…[or] [text]0" xcond>
+      <input type="text" class="form-control" name="xvar_text" maxlength="100" value="%xdt.text;" id="xvar_text" placeholder="…[or] [text]0" xcond %apply;prev_value(xdt.text)>
     </div>
   </div>
-%end;
-
-%define;small_date(kind,xvar,xx,verbose)
-  %let;day_input;pattern="(?:0?[1-9]|1[0-9]|2[0-9]|3[0-1])" size="2" maxlength="2"%in;
-  %let;month_input;pattern="(?:0?[1-9]|1[0-2]|VD|BR|FM|NI|PL|VT|GE|FL|PR|ME|TH|FT|JC|vd|br|fm|ni|pl|vt|ge|fl|pr|me|th|ft|jc)" size="1" maxlength="2"%in;
-  %let;year_input;pattern="[?><~/-+]?\d*/?" size="4" maxlength="8"%in;
-  <div class="row">
-    <span class="col-sm-2 col-form-label">[*kind]</span>
-    <div class="col-sm-auto form-inline">
-      %if;([!dates order]0 = "ddmmyy" or [!dates order]0 = "ddmmyyyy" or [!dates order]0 = "dmyyyy")
-        <label for="xvar_dd" class="col-form-label %if;(verbose=true)sr-only%end;">[year/month/day]2</label>
-        <input type="text" class="form-control mr-auto" name="xvar_dd" id="xvar_dd" value="%xx.create.kind_day;" placeholder="[dd/mm/yyyy]0" %day_input;>
-        <label for="xvar_mm" class="col-form-label %if;(verbose=true)sr-only%end;">[year/month/day]1</label>
-        <input type="text" class="form-control mr-auto" name="xvar_mm" id="xvar_mm" value="%xx.create.kind_month;" placeholder="[dd/mm/yyyy]1" %month_input;>
-        <label for="xvar=yyyy" class="col-form-label %if;(verbose=true)sr-only%end;">[year/month/day]0</label>
-        <input type="text" class="form-control mr-auto" name="xvar_yyyy" id="xvar_yyyy" value="%xx.create.kind_year;" placeholder="[dd/mm/yyyy]2" %year_input;>
-      %elseif;([!dates order]0 = "mmddyyyy")
-        <label for="xvar_mm" class="col-form-label %if;(verbose=true)sr-only%end;">[year/month/day]1</label>
-        <input type="text" class="form-control mr-auto" name="xvar_mm" id="xvar_mm" value="%xx.create.kind_month;" placeholder="[dd/mm/yyyy]1" %month_input;>
-        <label for="xvar_dd" class="col-form-label %if;(verbose=true)sr-only%end;">[year/month/day]2</label>
-        <input type="text" class="form-control mr-auto" name="xvar_dd" id="xvar_dd" value="%xx.create.kind_day;" placeholder="[dd/mm/yyyy]0" %day_input;>
-        <label for="xvar=yyyy" class="col-form-label %if;(verbose=true)sr-only%end;">[year/month/day]0</label>
-        <input type="text" class="form-control mr-auto" name="xvar_yyyy" id="xvar_yyyy" value="%xx.create.kind_year;" placeholder="[dd/mm/yyyy]2" %year_input;>
-      %else;
-        <label for="xvar=yyyy" class="col-form-label %if;(verbose=true)sr-only%end;">[year/month/day]0</label>
-        <input type="text" class="form-control mr-auto" name="xvar_yyyy" id="xvar_yyyy" value="%xx.create.kind_year;" placeholder="[dd/mm/yyyy]2" %year_input;>
-        <label for="xvar_mm" class="col-form-label %if;(verbose=true)sr-only%end;">[year/month/day]1</label>
-        <input type="text" class="form-control mr-auto" name="xvar_mm" id="xvar_mm" value="%xx.create.kind_month;" placeholder="[dd/mm/yyyy]1" %month_input;>
-        <label for="xvar_dd" class="col-form-label %if;(verbose=true)sr-only%end;">[year/month/day]2</label>
-        <input type="text" class="form-control mr-auto" name="xvar_dd" id="xvar_dd" value="%xx.create.kind_day;" placeholder="[dd/mm/yyyy]0" %day_input;>
-      %end;
-    </div>
-    <label for="xvar_pl" class="%if;(verbose=true)sr-only%end; col-sm-1 col-form-label">[place/places]0</label>%nn;
-    <div class="col-sm">
-      <input type="text" class="form-control" name="xvar_pl" value="%xx.create.kind_place;" id="xvar_pl" placeholder="[*place/places]0">
-    </div>
-  </div>
-%end;
-
-%define;birth(xvar,xx,verbose)
-  %apply;small_date("birth","xvarb","xx","verbose")
-%end;
-
-%define;death(xvar,xx,verbose)
-  %apply;small_date("death","xvard","xx","verbose")
-%end;
-
-%define;w_birth(xcnt, wcnt,xx,verbose)
-  %apply;small_date("birth","excnt_witnwcnt_b","witness","verbose")
-%end;
-
-%define;w_death(xcnt, wcnt,xx,verbose)
-  %apply;small_date("death","excnt_witnwcnt_d","witness","verbose")
 %end;
 
 %define;note(xx)
@@ -255,7 +234,55 @@
 %end;
 
 %define;selector_pevent(xcnt)
-  <select class="form-control font-weight-bold" id="pevent_selectxcnt" onchange="show_pevent_label($('#e_namexcnt').prop('defaultValue'), 'xcnt')">
+  %let;ptype;%if;(event.e_name="#acco")[*accomplishment]
+             %elseif;(event.e_name="#acqu")[*acquisition]
+             %elseif;(event.e_name="#adhe")[*adhesion]
+             %elseif;(event.e_name="#barm")[*bar mitzvah]
+             %elseif;(event.e_name="#basm")[*bat mitzvah]
+             %elseif;(event.e_name="#bles")[*benediction]
+             %elseif;(event.e_name="#chgn")[*change name]
+             %elseif;(event.e_name="#circ")[*circumcision]
+             %elseif;(event.e_name="#conf")[*confirmation]
+             %elseif;(event.e_name="#awar")[*decoration]
+             %elseif;(event.e_name="#demm")[*demobilisationMilitaire]
+             %elseif;(event.e_name="#degr")[*diploma]
+             %elseif;(event.e_name="#dist")[*distinction]
+             %elseif;(event.e_name="#endl")[*dotation]
+             %elseif;(event.e_name="#educ")[*education]
+             %elseif;(event.e_name="#elec")[*election]
+             %elseif;(event.e_name="#emig")[*emigration]
+             %elseif;(event.e_name="#exco")[*excommunication]
+             %elseif;(event.e_name="#fcom")[*firstCommunion]
+             %elseif;(event.e_name="#fune")[*funeral]
+             %elseif;(event.e_name="#grad")[*graduate]
+             %elseif;(event.e_name="#hosp")[*hospitalisation]
+             %elseif;(event.e_name="#illn")[*illness]
+             %elseif;(event.e_name="#immi")[*immigration]
+             %elseif;(event.e_name="#lpas")[*listePassenger]
+             %elseif;(event.e_name="#mdis")[*militaryDistinction]
+             %elseif;(event.e_name="#mpro")[*militaryPromotion]
+             %elseif;(event.e_name="#mser")[*militaryService]
+             %elseif;(event.e_name="#mobm")[*mobilisationMilitaire]
+             %elseif;(event.e_name="#natu")[*naturalisation]
+             %elseif;(event.e_name="#occu")[*occupation/occupations]0
+             %elseif;(event.e_name="#ordn")[*ordination]
+             %elseif;(event.e_name="#prop")[*property]
+             %elseif;(event.e_name="#cens")[*recensement]
+             %elseif;(event.e_name="#resi")[*residence]
+             %elseif;(event.e_name="#reti")[*retired]
+             %elseif;(event.e_name="#vteb")[*venteBien]
+             %elseif;(event.e_name="#will")[*will]
+             %elseif;(event.e_name="#bapl")[*baptismLDS]
+             %elseif;(event.e_name="#conl")[*confirmation LDS]
+             %elseif;(event.e_name="#dotl")[*dotationLDS]
+             %elseif;(event.e_name="#flkl")[*familyLinkLDS]
+             %elseif;(event.e_name="#slgc")[*scellentChildLDS]
+             %elseif;(event.e_name="#slgp")[*scellentParentLDS]
+             %elseif;(event.e_name="#slgs")[*scellentSpouseLDS]
+             %else;""
+             %end;
+  %in;
+  <select class="form-control font-weight-bold" id="pevent_selectxcnt" onchange="show_pevent_label($('#e_namexcnt').prop('defaultValue'), 'xcnt')" %apply;prev_value(ptype)>
     <option value="">[*custom event]</option>
     <option disabled>──────────</option>
     <option value="">-</option>
@@ -467,7 +494,7 @@
     <div class="row">
       <label for="e_placexcnt" class="col-2 col-form-label">[*place/places]0</label>
       <div class="col-10">
-        <input type="text" class="form-control" name="e_placexcnt" maxlength="200" value="%event.e_place;" id="e_placexcnt"%if;("evt_name" = "#deat") onfocus='set_death_focus(xcnt)'%elseif;("evt_name" = "buri_or_crem") onfocus='set_burial_focus(xcnt)'%end; placeholder="[*place/places]0">
+        <input type="text" class="form-control" name="e_placexcnt" maxlength="200" value="%event.e_place;" id="e_placexcnt"%if;("evt_name" = "#deat") onfocus='set_death_focus(xcnt)'%elseif;("evt_name" = "buri_or_crem") onfocus='set_burial_focus(xcnt)'%end; placeholder="[*place/places]0" %apply;prev_value(event.e_place)>
         <a class="astuce" onmouseover="show_explain('updind','place',event)" onmouseout="hide_explain('updind',event)"></a>
       </div>
     </div>
@@ -475,16 +502,16 @@
     <div class="row">
       <label for="e_notexcnt" class="col-2 col-form-label">[*note/notes]1</label>
       <div class="col-10">
-         <textarea class="form-control" name="e_notexcnt" id="e_notexcnt" rows="1" placeholder="[*note/notes]1" %l_on1s;>%event.e_note;</textarea>
+         <textarea class="form-control" name="e_notexcnt" id="e_notexcnt" rows="1" placeholder="[*note/notes]1" %apply;prev_value(event.e_note) %l_on1s;>%event.e_note;</textarea>
       </div>
     </div>
     <div class="row">
       <label for="e_srcxcnt" class="col-2 col-form-label">[*source/sources]0</label>
       <div class="col-10">
         %if;(event.e_src!="")
-          <textarea class="form-control" name="e_srcxcnt" id="e_srcxcnt" rows="1" placeholder="[*source/sources]0" %l_on1s;>%event.e_src;</textarea>
+          <textarea class="form-control" name="e_srcxcnt" id="e_srcxcnt" rows="1" placeholder="[*source/sources]0" %apply;prev_value(event.e_src) %l_on1s;>%event.e_src;</textarea>
         %else;
-          <input class="form-control" name="e_srcxcnt" id="e_srcxcnt" placeholder="[*source/sources]0" value="%event.e_src;">
+          <input class="form-control" name="e_srcxcnt" id="e_srcxcnt" placeholder="[*source/sources]0" value="%event.e_src;" %apply;prev_value("")>
         %end;
       </div>
     </div>
@@ -506,7 +533,14 @@
       <div class="row">
         <label for="death_selectxcnt" class="col-sm-2 col-form-label">Type</label>
         <div class="ml-3">
-          <select class="form-control" name="death" id="death_selectxcnt" onchange="change_death('xcnt')">
+          %let;pdeath;%if;(not_dead)[*alive]2
+                      %elseif;(dont_know_if_dead)[*don't know]0
+                      %elseif;(death.year != "" or death.text != "" or dead_dont_know_when)[*died]2
+                      %elseif;(died_young)[*died young]2
+                      %elseif;(of_course_dead)[*of course dead]
+                      %else;""%end;
+          %in;
+          <select class="form-control" name="death" id="death_selectxcnt" onchange="change_death('xcnt')" %apply;prev_value(pdeath)>
             %if;(not has_birth_date and dont_know_if_dead)
               <option value="Auto" selected>-</option>
             %end;
@@ -517,7 +551,13 @@
             <option value="OfCourseDead" %if;of_course_dead; selected%end;>[*of course dead]</option>
           </select>
         </div>
-        <div class="ml-4 mt-1">
+        %let;pdr;%if;(dr_killed)[*killed (in action)]2
+                 %elseif;(dr_murdered)[*murdered]2
+                 %elseif;(dr_executed)[*executed (llegally killed)]2
+                 %elseif;(dr_disappeared)[*disappeared]2
+                 %else;[*unspecified]2%end;
+        %in;
+        <div class="ml-4 mt-1" %apply;prev_value(pdr)>
           <div class="form-check form-check-inline">
             <input class="form-check-input" type="radio" name="death_reason" value="Killed" id="Killed"%if;dr_killed; checked%end; onclick='set_death_focus(xcnt)'>
             <label class="form-check-label" for="Killed">[*killed (in action)]2</label>
@@ -545,7 +585,11 @@
       <div class="row">
         <label for="buri_selectxcnt" class="col-sm-2 col-form-label">Type</label>
         <div class="col-sm-10">
-          <select class="form-control" id="buri_selectxcnt" onchange="change_buri('xcnt')">
+          %let;pburi;%if;("evt_name" = "#buri")[*buried]2
+                     %elseif;("evt_name" = "#crem")[*cremated]2
+                     %else;""%end;
+          %in;
+          <select class="form-control" id="buri_selectxcnt" onchange="change_buri('xcnt')" %apply;prev_value(pburi)>
             <option value="" %if;("evt_name" = "") selected %end;>-</option>
             <option value="#buri" %if;("evt_name" = "#buri") selected %end;>[*buried]2</option>
             <option value="#crem" %if;("evt_name" = "#crem") selected %end;>[*cremated]2</option>
@@ -564,23 +608,23 @@
     <div class="row">
       <label for="e_placexcnt" class="col-sm-2 col-form-label">[*place/places]0</label>
       <div class="col-sm-10">
-        <input type="text" class="form-control" name="e_placexcnt" maxlength="200" value="%event.e_place;"%sp; id="e_placexcnt" %if;("evt_name" = "#deat") onfocus='set_death_focus(xcnt)'%end; placeholder="[*place/places]0">
+        <input type="text" class="form-control" name="e_placexcnt" maxlength="200" value="%event.e_place;"%sp; id="e_placexcnt" %if;("evt_name" = "#deat") onfocus='set_death_focus(xcnt)'%end; placeholder="[*place/places]0" %apply;prev_value(event.e_place)>
       </div>
     </div>
     %apply;date%with;[*date/dates]0%and;e_datexcnt%and;event_date%and;%if;("evt_name" = "#deat")onfocus='set_death_focus(xcnt)'%end;%end;
     <div class="row">
       <label for="e_notexcnt" class="col-sm-2 col-form-label">[*note/notes]1</label>
       <div class="col-sm-10">
-         <textarea class="form-control" name="e_notexcnt" id="e_notexcnt" rows="1" placeholder="[*note/notes]1" %l_on1s;>%event.e_note;</textarea>
+         <textarea class="form-control" name="e_notexcnt" id="e_notexcnt" rows="1" placeholder="[*note/notes]1" %apply;prev_value(event.e_note) %l_on1s;>%event.e_note;</textarea>
       </div>
     </div>
     <div class="row">
       <label for="e_srcxcnt" class="col-sm-2 col-form-label">[*source/sources]0</label>
       <div class="col-sm-10">
         %if;(event.e_src!="")
-          <textarea class="form-control" name="e_srcxcnt" id="e_srcxcnt" rows="1" placeholder="[*source/sources]0" %l_on1s;>%event.e_src;</textarea>
+          <textarea class="form-control" name="e_srcxcnt" id="e_srcxcnt" rows="1" placeholder="[*source/sources]0" %apply;prev_value(event.e_src) %l_on1s;>%event.e_src;</textarea>
         %else;
-          <input class="form-control" name="e_srcxcnt" id="e_srcxcnt" placeholder="[*source/sources]0" value="%event.e_src;">
+          <input class="form-control" name="e_srcxcnt" id="e_srcxcnt" placeholder="[*source/sources]0" value="%event.e_src;" %apply;prev_value(event.e_src)>
         %end;
       </div>
     </div>
@@ -600,7 +644,7 @@
     <div class="row">
       <label for="death_selectxcnt" class="col-sm-2 col-form-label"></label>
       <div class="col col-sm-auto">
-        <select class="form-control pr-0" name="death" id="death_selectxcnt" onchange="change_death('xcnt')">
+        <select class="form-control pr-0" name="death" id="death_selectxcnt" onchange="change_death('xcnt')" %apply;prev_value("")>
           %if;(not has_birth_date and dont_know_if_dead)
             <option value="Auto" selected>-</option>
           %end;
@@ -611,7 +655,7 @@
           <option value="OfCourseDead"%if;of_course_dead; selected%end;>[*of course dead]</option>
         </select>
       </div>
-      <div class="col mt-1">
+      <div class="col mt-1" %apply;prev_value("")>
         <div class="form-check form-check-inline">
           <input class="form-check-input" type="radio" name="death_reason" value="Killed" id="Killed"%if;dr_killed; checked%end; onclick='set_death_focus(xcnt)'>
           <label class="form-check-label" for="Killed">[*killed (in action)]2</label>
@@ -639,7 +683,7 @@
     <div class="row">
       <label for="buri_selectxcnt" class="col-sm-2 col-form-label"></label>
       <div class="ml-3">
-        <select class="form-control" id="buri_selectxcnt" onchange="change_buri('xcnt')">
+        <select class="form-control" id="buri_selectxcnt" onchange="change_buri('xcnt')" %apply;prev_value("")>
           <option value=""%if;("evt_name" = "") selected %end;>-</option>
           <option value="#buri"%if;("evt_name" = "#buri") selected %end;>[*buried]2</option>
           <option value="#crem"%if;("evt_name" = "#crem") selected %end;>[*cremated]2</option>
@@ -662,7 +706,7 @@
     <label for="e_placexcnt" class="col-sm-2 col-form-label">[*place/places]0</label>
     <div class="col-sm-10">
       <input type="text" class="form-control" name="e_placexcnt" id="e_placexcnt" value="" placeholder="[*place/places]0"
-        maxlength="200"%if;("evt_name" = "#deat") onfocus='set_death_focus(xcnt)'%elseif;("evt_name" = "buri_or_crem") onfocus='set_buri(xcnt)'%end;>
+        maxlength="200"%if;("evt_name" = "#deat") onfocus='set_death_focus(xcnt)'%elseif;("evt_name" = "buri_or_crem") onfocus='set_buri(xcnt)'%end; %apply;prev_value("")>
     </div>
   </div>
   %if;("evt_name"="#deat")
@@ -675,13 +719,13 @@
   <div class="row">
     <label for="e_notexcnt" class="col-sm-2 col-form-label">[*note/notes]1</label>
     <div class="col-sm-10">
-       <textarea class="form-control" name="e_notexcnt" id="e_notexcnt" rows="1" placeholder="[*note/notes]1" %l_on1s;%if;("evt_name" = "buri_or_crem") onfocus='set_buri(xcnt)'%end;></textarea>
+       <textarea class="form-control" name="e_notexcnt" id="e_notexcnt" rows="1" placeholder="[*note/notes]1" %l_on1s;%if;("evt_name" = "buri_or_crem") onfocus='set_buri(xcnt)'%end; %apply;prev_value("")></textarea>
     </div>
   </div>
   <div class="row">
     <label for="e_srcxcnt" class="col-sm-2 col-form-label">[*source/sources]0</label>
     <div class="col-sm-10">
-      <input type="text" class="form-control" name="e_srcxcnt" value="" id="e_srcxcnt" placeholder="[*source/sources]0"%if;("evt_name" = "buri_or_crem") onfocus='set_buri(xcnt)'%end;>
+      <input type="text" class="form-control" name="e_srcxcnt" value="" id="e_srcxcnt" placeholder="[*source/sources]0"%if;("evt_name" = "buri_or_crem") onfocus='set_buri(xcnt)'%end; %apply;prev_value("")>
     </div>
   </div>
   %(
@@ -697,6 +741,7 @@
   %)
   %apply;insert_witness(xcnt, "0", "evt_name")
 %end;
+
 %let;l_on1s;onkeydown="if (event.keyCode == 13) if (!event.shiftKey) javascript:document.upd.submit()"%in;
 <form name="upd" method="post" action="%action;">
   <div class="row">
@@ -748,20 +793,21 @@
         <div class="row">
           <label for="first_name" class="col-sm-2 col-form-label">[*first name/first names]0</label>
           <div class="col-sm-6">
-            <input type="text" class="form-control" name="first_name" maxlength="200" value="%first_name;" id="first_name" placeholder="[*first name/first names]0">
+            <input type="text" class="form-control" name="first_name" maxlength="200" value="%first_name;" id="first_name" placeholder="[*first name/first names]0" %apply;prev_value(first_name)>
           </div>
           <label for="occ" class="col col-form-label">[*number]0</label>
           <div class="col">
-            <input type="number" class="form-control" name="occ" min="0" value="%occ;" id="occ">
+            <input type="number" class="form-control" name="occ" min="0" value="%occ;" id="occ" %apply;prev_value(occ)>
           </div>
         </div>
         <div class="row">
           <label for="surname" class="col-sm-2 col-form-label">[*surname/surnames]0</label>
           <div class="col-sm-6">
-            <input type="text" class="form-control" name="surname" maxlength="200" value="%surname;" id="surname" placeholder="[*surname/surnames]0">
+            <input type="text" class="form-control" name="surname" maxlength="200" value="%surname;" id="surname" placeholder="[*surname/surnames]0" %apply;prev_value(surname)>
           </div>
           <span class="col col-form-label">[*sex]</span>
-          <div class="col mt-2">
+          %let;psex;%if;(is_male)M%elseif;(is_female)F%else;?%end;%in;
+          <div class="col mt-2" %apply;prev_value(psex)>
             <div class="form-check form-check-inline">
               <input class="form-check-input" type="radio" name="sex" value="M" id="sexM"%if;is_male; checked%end; title="[*male/female/neuter]0">
               <label class="form-check-label" for="sexM">[M/F]0</label>
@@ -781,17 +827,18 @@
             <div class="row">
             <label for="public_name" class="col-sm-3 col-form-label">[*public name]</label>
             <div class="col-sm-9">
-              <input type="text" class="form-control" name="public_name" value="%public_name;" id="public_name" placeholder="[*public name]">
+              <input type="text" class="form-control" name="public_name" value="%public_name;" id="public_name" placeholder="[*public name]" %apply;prev_value(public_name)>
             </div>
             <label for="image" class="col-sm-3 col-form-label mt-3">[*image/images]0</label>
             <div class="col-sm-9 mt-3">
-              <input type="text" class="form-control" name="image" value="%image;" id="image" placeholder="[*image/images]0">
+              <input type="text" class="form-control" name="image" value="%image;" id="image" placeholder="[*image/images]0" %apply;prev_value(image)>
             </div>
             </div>
           </div>
           <div class="col-4 d-flex px-0">
             <span class="col col-form-label">[*access]0</span>
-            <div class="col mt-2">
+            %let;paccess;%if;(acc_if_titles)[*if titles]0%elseif;(acc_public)[*public]0%else;[*private]0%end;%in;
+            <div class="col mt-2" %apply;prev_value(paccess)>
               <div class="form-check">
                 <input class="form-check-input" type="radio" name="access" value="IfTitles" id="IfTitles"%if;acc_if_titles; checked%end;>
                 <label class="form-check-label" for="IfTitles">[*if titles]0</label>
@@ -814,7 +861,7 @@
             <div class="row">
               <label for="qualifier%cnt;" class="col-sm-2 col-form-label">[*qualifier]0</label>
               <div class="col-sm-6">
-                <input type="text" class="form-control" name="qualifier%cnt;" value="%qualifier;" id="qualifier%cnt;" placeholder="[*qualifier]0">
+                <input type="text" class="form-control" name="qualifier%cnt;" value="%qualifier;" id="qualifier%cnt;" placeholder="[*qualifier]0" %apply;prev_value(qualifier)>
               </div>
               <div class="custom-control custom-checkbox col-sm-auto mt-2 ml-3">
                 <input class="custom-control-input"  type="checkbox" name="add_qualifier%cnt;" value="on" id="add_qualifier%cnt;">
@@ -826,7 +873,7 @@
           <div class="row">
             <label for="qualifier0" class="col-sm-2 col-form-label">[*qualifier]0</label>
             <div class="col-sm-6">
-              <input type="text" class="form-control" name="qualifier0" value="" id="qualifier0" placeholder="[*qualifier]0">
+              <input type="text" class="form-control" name="qualifier0" value="" id="qualifier0" placeholder="[*qualifier]0" %apply;prev_value("")>
             </div>
             <div class="custom-control custom-checkbox col-sm-auto mt-2 ml-3">
               <input class="custom-control-input" type="checkbox" name="add_qualifier0" value="on" id="add_qualifier0">
@@ -839,7 +886,7 @@
             <div class="row">
               <label for="alias%cnt;" class="col-sm-2 col-form-label">[*alias]0</label>
               <div class="col-sm-6">
-                <input type="text" class="form-control" name="alias%cnt;" value="%alias;" id="alias%cnt;" placeholder="[*alias]0">
+                <input type="text" class="form-control" name="alias%cnt;" value="%alias;" id="alias%cnt;" placeholder="[*alias]0" %apply;prev_value(alias)>
               </div>
               <div class="custom-control custom-checkbox col-sm-auto mt-2 ml-3">
                 <input class="custom-control-input" type="checkbox" name="add_alias%cnt;" value="on" id="add_alias%cnt;">
@@ -851,7 +898,7 @@
           <div class="row">
             <label for="alias0" class="col-sm-2 col-form-label">[*alias]0</label>
             <div class="col-sm-6">
-              <input type="text" class="form-control" name="alias0" value="" id="alias0" placeholder="[*alias]0">
+              <input type="text" class="form-control" name="alias0" value="" id="alias0" placeholder="[*alias]0" %apply;prev_value("")>
             </div>
             <div class="custom-control custom-checkbox col-sm-auto mt-2 ml-3">
               <input class="custom-control-input" type="checkbox" name="add_alias0" value="on" id="add_alias0">
@@ -864,7 +911,7 @@
             <div class="row">
               <label for="first_name_alias%cnt;" class="col-sm-2 col-form-label">[*first name alias]0</label>
               <div class="col-sm-6">
-                <input type="text" class="form-control" name="first_name_alias%cnt;" value="%first_name_alias;" id="first_name_alias%cnt;" placeholder="[*first name alias]0">
+                <input type="text" class="form-control" name="first_name_alias%cnt;" value="%first_name_alias;" id="first_name_alias%cnt;" placeholder="[*first name alias]0" %apply;prev_value(first_name_alias)>
               </div>
               <div class="custom-control custom-checkbox col-sm-auto mt-2 ml-3">
                 <input class="custom-control-input" type="checkbox" name="add_first_name_alias%cnt;" value="on" id="add_first_name_alias%cnt;">
@@ -876,7 +923,7 @@
           <div class="row">
             <label for="first_name_alias0" class="col-sm-2 col-form-label">[*first name alias]0</label>
             <div class="col-sm-6">
-              <input type="text" class="form-control" name="first_name_alias0" value="" id="first_name_alias0" placeholder="[*first name alias]0">
+              <input type="text" class="form-control" name="first_name_alias0" value="" id="first_name_alias0" placeholder="[*first name alias]0"  %apply;prev_value("")>
             </div>
             <div class="custom-control custom-checkbox col-sm-auto mt-2 ml-3">
               <input class="custom-control-input" type="checkbox" name="add_first_name_alias0" value="on" id="add_first_name_alias0">
@@ -889,7 +936,7 @@
             <div class="row">
               <label for="surname_alias%cnt;" class="col-sm-2 col-form-label">[*surname alias]0</label>
               <div class="col-sm-6">
-                <input type="text" class="form-control" name="surname_alias%cnt;" value="%surname_alias;" id="surname_alias%cnt;" placeholder="[*surname alias]0">
+                <input type="text" class="form-control" name="surname_alias%cnt;" value="%surname_alias;" id="surname_alias%cnt;" placeholder="[*surname alias]0" %apply;prev_value(surname_alias)>
               </div>
               <div class="custom-control custom-checkbox col-sm-auto mt-2 ml-3">
                 <input class="custom-control-input"  type="checkbox" name="add_surname_alias%cnt;" value="on" id="add_surname_alias%cnt;">
@@ -901,7 +948,7 @@
           <div class="row">
             <label for="surname_alias0" class="col-sm-2 col-form-label">[*surname alias]0</label>
             <div class="col-sm-6">
-              <input type="text" class="form-control" name="surname_alias0" value="" id="surname_alias0" placeholder="[*surname alias]0">
+              <input type="text" class="form-control" name="surname_alias0" value="" id="surname_alias0" placeholder="[*surname alias]0" %apply;prev_value("")>
             </div>
             <div class="custom-control custom-checkbox col-sm-auto mt-2 ml-3">
               <input class="custom-control-input" type="checkbox" name="add_surname_alias0" value="on" id="add_surname_alias0">
@@ -914,9 +961,9 @@
         <label for="occu" class="col-sm-2 col-form-label">[*occupation/occupations]1</label>
         <div class="col-sm-8">
           %if;(occupation!="")
-            <textarea class="form-control" name="occu" rows="1" id="occu" placeholder="[*occupation/occupations]1" %l_on1s;>%occupation;</textarea>
+            <textarea class="form-control" name="occu" rows="1" id="occu" placeholder="[*occupation/occupations]1" %l_on1s; %apply;prev_value(occupation)>%occupation;</textarea>
           %else;
-            <input class="form-control" name="occu" id="occu" placeholder="[*occupation/occupations]1" value="%occupation;">
+            <input class="form-control" name="occu" id="occu" placeholder="[*occupation/occupations]1" value="%occupation;" %apply;prev_value(occupation)>
           %end;
         </div>
       </div>
@@ -924,9 +971,9 @@
         <label for="src" class="col-sm-2 col-form-label">[*source/sources]0</label>
         <div class="col-sm-8">
           %if;(sources!="")
-            <textarea class="form-control" name="src" rows="1" id="src" placeholder="[*source/sources]0" %l_on1s;>%sources;</textarea>
+            <textarea class="form-control" name="src" rows="1" id="src" placeholder="[*source/sources]0" %l_on1s; %apply;prev_value(sources)>%sources;</textarea>
           %else;
-            <input class="form-control" name="src" id="src" placeholder="[*source/sources]0" value="%sources;">
+            <input class="form-control" name="src" id="src" placeholder="[*source/sources]0" value="%sources;" %apply;prev_value("")>
           %end;
         </div>
         <button type="submit" class="btn btn-primary btn-sm col-2" title="[*validate/delete]0">
@@ -1111,7 +1158,15 @@
   <div class="row">
     <h5 class="col-sm-2 col-form-label"><label for="rxx_type" class="mb-0 ">[*relation/relations]0 xx</label></h5>
     <div class="ml-3">
-      <select class="form-control" name="rxx_type" id="rxx_type">
+      %let;prtype;%if;(relation.rt_adoption)[*adoptive father/adoptive mother/adoptive parents]2
+                  %elseif;(relation.rt_recognition)[*recognizing father/recognizing mother/recognizing parents]2
+                  %elseif;(relation.rt_candidate_parent)[*candidate father/candidate mother/candidate parents]2
+                  %elseif;(relation.rt_godparent)[*godfather/godmother/godparents]2
+        %elseif;(relation.rt_foster_parent)[*foster father/foster mother/foster parents]2
+        %else;""
+        %end;
+      %in;
+      <select class="form-control" name="rxx_type" id="rxx_type" %apply;prev_value(prtype)>
         <option value="Undef"%if;relation.rt_empty; selected%end;>-</option>
         <option value="Adoption"%if;relation.rt_adoption; selected%end;>[*adoptive father/adoptive mother/adoptive parents]2</option>
         <option value="Recognition"%if;relation.rt_recognition;%sp;selected%end;>[*recognizing father/recognizing mother/recognizing parents]2</option>
@@ -1128,11 +1183,11 @@
     <div class="row">
       <label for="rxcnt_xvar_fn" class="col-sm-2 col-form-label">[*first name/first names]0</label>
       <div class="col-sm-5">
-        <input type="text" class="form-control" name="rxcnt_xvar_fn" maxlength="200" value="%relation.xrel.first_name;" id="rxcnt_xvar_fn" placeholder="[*first name/first names]0">
+        <input type="text" class="form-control" name="rxcnt_xvar_fn" maxlength="200" value="%relation.xrel.first_name;" id="rxcnt_xvar_fn" placeholder="[*first name/first names]0" %apply;prev_value(relation.xrel.first_name)>
       </div>
       <label for="rxcnt_xvar_occ" class="col-sm col-form-label">[*number]0</label>
       <div class="col-sm">
-        <input type="number" class="form-control" name="rxcnt_xvar_occ" min="0" value="%relation.xrel.occ;" id="rxcnt_xvar_occ" placeholder="">
+        <input type="number" class="form-control" name="rxcnt_xvar_occ" min="0" value="%relation.xrel.occ;" id="rxcnt_xvar_occ" placeholder="" %apply;prev_value(relation.xrel.occ)>
       </div>
       <div class="col-sm-2">
         <select class="form-control" name="rxcnt_xvar_p" id="rxcnt_xvar_p_selct">
@@ -1145,7 +1200,7 @@
       <label for="rxcnt_xvar_sn" class="col-sm-2 col-form-label">[*surname/surnames]0</label>
       <div class="col-sm-5">
         <input type="text" class="form-control" name="rxcnt_xvar_sn" value="%relation.xrel.surname;"
-           id="rxcnt_xvar_sn" placeholder="[*surname/surnames]0">
+           id="rxcnt_xvar_sn" placeholder="[*surname/surnames]0" %apply;prev_value(relation.xrel.surname)>
       </div>
       <div id="rxcnt_xvar_p_selct_mod" class="col-form-label ml-2">
         %if;(relation.xrel.index!="-1"  and (relation.xrel.first_name!="" or relation.xrel.surname!=""))
@@ -1224,21 +1279,21 @@
     <div class="row">
       <label for="t_identxcnt" class="col-form-label col-sm-2">[*title/titles]0</label>
       <div class="col-sm-4">
-        <input type="text" class="form-control" name="t_identxcnt" value="%title.t_ident;" id="t_identxcnt" placeholder="[*title/titles]0">
+        <input type="text" class="form-control" name="t_identxcnt" value="%title.t_ident;" id="t_identxcnt" placeholder="[*title/titles]0" %apply;prev_value(title.t_ident)>
       </div>
       <label for="t_placexcnt" class="col-form-label col-sm-2">[*estate]0</label>
       <div class="col-sm-4">
-        <input type="text" class="form-control" name="t_placexcnt" value="%title.t_estate;" id="t_placexcnt" placeholder="[*estate]0">
+        <input type="text" class="form-control" name="t_placexcnt" value="%title.t_estate;" id="t_placexcnt" placeholder="[*estate]0" %apply;prev_value(title.t_estate)>
       </div>
     </div>
     <div class="row">
       <label for="t_namexcnt" class="col-form-label col-sm-2">[*name]0</label>
       <div class="col-sm-4">
-        <input type="text" class="form-control" name="t_namexcnt" value="%title.t_name;" id="t_namexcnt" placeholder="[*name]0">
+        <input type="text" class="form-control" name="t_namexcnt" value="%title.t_name;" id="t_namexcnt" placeholder="[*name]0" %apply;prev_value(title.t_name)>
       </div>
       <label for="t_nthxcnt" class="col-form-label col-sm-2">[*nth]0</label>
       <div class="col-sm-1">
-        <input type="text" class="form-control" name="t_nthxcnt" size="3" value="%title.t_nth;" id="t_nthxcnt" placeholder="#">
+        <input type="text" class="form-control" name="t_nthxcnt" size="3" value="%title.t_nth;" id="t_nthxcnt" placeholder="#" %apply;prev_value(title.t_nth)>
       </div>
       <div class="form-inline form-check">
         <input class="form-check-input" id="maintitle" type="checkbox" name="t_main_titlexcnt" value="on"%if;title.t_main; checked%end;>
@@ -1274,7 +1329,7 @@
       <div class="d-inline col-9 py-1">
         %include;toolbar
       </div>
-      <textarea class="col-9 form-control insert-character-target" id="notes_comments" name="notes" rows="4">%notes;</textarea>%sq;
+      <textarea class="col-9 form-control insert-character-target" id="notes_comments" name="notes" rows="4" %apply;prev_value(notes)>%notes;</textarea>%sq;
       <button type="submit" class="btn btn-primary btn-lg col-4 py-3 mt-2 mb-3 mx-auto order-3" title="[*validate/delete]0" aria-label="[*validate/delete]0">
         <span class="font-weight-bold text-uppercase">[*validate/delete]0</span><i class="fa fa-share fa-rotate-180 fa-fw ml-2" aria-hidden="true"></i>
       </button>
